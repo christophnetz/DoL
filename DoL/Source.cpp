@@ -15,8 +15,10 @@ using namespace Eigen;
 std::mt19937_64 rng;
 int Tmax = 100000;
 double lambda = 0.9; //forgetting, lim-> 10
+double updaterate = 0.2;
 double mort = 0.006; //0.006
-double birthrate = 0.2; //0.2
+double birthrate = 0.06; //0.2 //6, 0.2, 0.06
+double phi = 0.0; // interaction term for suitability x experience
 
 
 Matrix<double, 1, 3> suitability(const double size) {
@@ -65,7 +67,7 @@ struct ind
     m_experience = m_task + lambda * m_experience;
   }
 
-  void task( Matrix<double, 1, 3> labourdist) {
+  void task( Matrix<double, 1, 3> labour, double popsize) {
 
     /*
     get min of labour - pour in individual labour until equalized, distribute rest evenly
@@ -104,16 +106,15 @@ struct ind
  */
 
 
-    m_task = suitability(size) + m_experience - labourdist;
-    m_task.array() += 0.333;
-
+    m_task =  suitability(size) + m_experience/10.0 - labour/popsize + phi * (suitability(size).array() * m_experience.array() / 10.0).matrix() ; //
+    m_task.array() += 1;  //really this is (N - labour), but due to eigen library better written this way
     updates++;
     m_task = m_task / m_task.sum();
   }
 
   void labour(Matrix<double, 1, 3>& labour) {
 
-    labour += (m_task.array() * (suitability(size) + m_experience).array()).matrix();//*
+    labour += (m_task.array() * (suitability(size) + m_experience/10.0  + phi * (suitability(size).array() * m_experience.array() / 10.0).matrix()  ).array()).matrix();//
   }
 };
 
@@ -142,9 +143,10 @@ void deaths(vector<ind>& pop) {
 void births(vector<ind>& pop, int& ID, const Matrix<double, 1, 3> labour) {
   
   int offspring = std::poisson_distribution<int> (birthrate)(rng);
+  double popsize = static_cast<double> (pop.size());
   for (int i = 0; i < offspring; ++i) {
     pop.push_back(ind(ID));
-    pop.back().task(labour);
+    pop.back().task(labour, popsize);
     ID = (ID + 1);
   }
 }
@@ -172,7 +174,7 @@ int main() {
   // discrete times, but don't update simultaneously, instead draw individuals at random one after the other
   for (double t = 0.0; t < Tmax; ) {
 
-    double delta_t = std::exponential_distribution<double>(static_cast<double>(pop.size()) * 0.2)(rng);
+    double delta_t = std::exponential_distribution<double>(static_cast<double>(pop.size()) * updaterate)(rng);
 
     while (delta_t + t > static_cast<int>(next_t)) {
       
@@ -186,9 +188,6 @@ int main() {
         pop[i].experience();
         pop[i].size *= (1.0 + 0.2 * exp(-0.15 * pop[i].size));
       }
-
-      labour = labour / labour.sum();
-
 
       // Output
       ofs1 << next_t << "\t" << pop.size() << "\t" << avg_size(pop) << "\t" << sd(labour.array()) << "\t" << labour << std::endl;
@@ -206,7 +205,7 @@ int main() {
 
     int sel_i = std::uniform_int_distribution<int>(0, pop.size() - 1) (rng);
 
-    pop[sel_i].task(labour);
+    pop[sel_i].task(labour, static_cast<double>(pop.size()));
 
     t += delta_t;
 

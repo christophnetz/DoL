@@ -23,7 +23,11 @@ ggplot(data1, aes(t, sdneed))+ geom_line()
 data1 <- gather(data1, eggcare, digging, defense, key = "behaviour", value = "prop")
 
 ggplot(data1, aes(t, prop, colour = behaviour))+ geom_line()+
-  geom_line(aes(t, avgbodysize/50), colour = "black")+xlim(99000, 100000)
+  geom_line(aes(t, avgbodysize/5), colour = "black")+xlim(99000, 100000)
+
+ggplot(data1, aes(t, prop, colour = behaviour))+ geom_line()+
+  geom_line(aes(t, popsize/5), colour = "black")+xlim(99000, 100000)
+
   
 
 #Individual-level data
@@ -122,18 +126,16 @@ ggplot(filter(data2, size > 40))+geom_point(aes(exp_def, exp_digg, color = size)
 
 ggplot(filter(data2, size > 40))+geom_point(aes(exp_def, exp_digg, color = size))
 
-filter(data2, size > 40, exp_digg< 1)
 
-filter(data2, size > 40, task_digg < 0.15)
-min(filter(data2, size > 40)$task_digg)
+unique(filter(data2, size > 45)$ID)
 # track single individuals
 
-ggplot(filter(data2, ID == 546522   ))+geom_point(aes(exp_def, exp_digg, color = size))
-ggplot(filter(data2, ID == 546522   ))+geom_point(aes(task_def, task_digg, color = size))
-ggplot(filter(data2, ID == 546522   ))+geom_point(aes(t, task_digg, color = size))
-ggplot(filter(data2, ID == 546522   ))+geom_point(aes(t, exp_digg, color = size))
+ggplot(filter(data2, ID == 545691     ))+geom_point(aes(exp_def, exp_digg, color = size))
+ggplot(filter(data2, ID == 545691     ))+geom_point(aes(task_def, task_digg, color = size))
+ggplot(filter(data2, ID == 545691     ))+geom_point(aes(t, task_digg, color = size))
+ggplot(filter(data2, ID == 545691     ))+geom_point(aes(t, exp_digg, color = size))
 
-plot_ly(filter(data2, ID == 546522   ), x = ~task_egg, y = ~task_digg, z = ~task_def, color = ~size, size = 0.1)
+plot_ly(filter(data2, ID == 545691     ), x = ~task_egg, y = ~task_digg, z = ~task_def, color = ~size, size = 0.1)
 
 
 
