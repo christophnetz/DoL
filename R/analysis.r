@@ -31,12 +31,12 @@ ggplot(data1, aes(t, prop, colour = behaviour))+ geom_line()+
   
 
 #Individual-level data
-data2 <- read.table("output2.txt", header = T)
+data2 <- read.table("output2small.txt", header = T)
 
-data2 <- filter(data2, !ID %in% data2$ID[which(data2$t==90010)] )
+data2 <- filter(data2, !ID %in% data2$ID[which(data2$t==99001)] )
 
 #To select data for 1000 individuals
-data2 <- filter(data2, ID %in% sample(unique(data2$ID), 1000))
+data2 <- filter(data2, ID %in% sample(unique(data2$ID), 500))
 
 data2$suit_egg <- 1/(1 + exp((data2$size - 15)/4))
 data2$suit_digg <- 3/((1 + exp((25-data2$size)/4)) * (1 + exp((data2$size-25)/4)))
@@ -72,12 +72,16 @@ ggplot(lifehistory, aes(maxsize))+geom_density(bounds = c(1, Inf))
 ggplot(data2, aes(size))+geom_density(bounds = c(1, Inf))
 ggplot(data2, aes(age))+geom_density(bounds = c(0, Inf))
 
-ggplot(data2, aes(age, size))+geom_point()
+ggplot(data2, aes(age, size))+geom_point()+xlim(0, 100)
 
 #three different tasks over body size
 ggplot(data2, aes(size, task_egg))+geom_point()
 ggplot(data2, aes(size, task_digg))+geom_point()
 ggplot(data2, aes(size, task_def))+geom_point()
+
+ggplot(data2, aes(size, exp_egg))+geom_point()
+ggplot(data2, aes(size, exp_digg))+geom_point()
+ggplot(data2, aes(size, exp_def))+geom_point()
 
 
 ggplot(data2, aes(t, task_egg, colour = size))+geom_point()+xlim(99000, 100000)
@@ -121,6 +125,13 @@ plot_ly(data2, x = ~task_egg, y = ~task_digg, z = ~task_def, color = ~size)
 ggplot(filter(data2, size > 40))+geom_point(aes(task_def, task_digg, color = size))
 ggplot(data2)+geom_point(aes(task_def, task_digg, color = size))
 
+ggplot(data2, aes(task_def, task_digg, color = size, group = ID)) + geom_point() + geom_line()
+
+
+
+
+ggplot(data2)+geom_point(aes(exp_def, exp_digg, color = size))
+
 ggplot(filter(data2, size > 40))+geom_point(aes(exp_def, exp_digg, color = size))
 
 
@@ -130,12 +141,27 @@ ggplot(filter(data2, size > 40))+geom_point(aes(exp_def, exp_digg, color = size)
 unique(filter(data2, size > 45)$ID)
 # track single individuals
 
-ggplot(filter(data2, ID == 545691     ))+geom_point(aes(exp_def, exp_digg, color = size))
-ggplot(filter(data2, ID == 545691     ))+geom_point(aes(task_def, task_digg, color = size))
-ggplot(filter(data2, ID == 545691     ))+geom_point(aes(t, task_digg, color = size))
-ggplot(filter(data2, ID == 545691     ))+geom_point(aes(t, exp_digg, color = size))
+ggplot(filter(data2, ID == 18181      ))+geom_point(aes(exp_def, exp_digg, color = size))
+ggplot(filter(data2, ID == c(595278, 596359 )           ))+geom_point(aes(task_def, task_digg, color = size))
+ggplot(filter(data2, ID == 18181      ))+geom_point(aes(t, task_digg, color = size))
+ggplot(filter(data2, ID == 18181      ))+geom_point(aes(t, exp_digg, color = size))
 
 plot_ly(filter(data2, ID == 545691     ), x = ~task_egg, y = ~task_digg, z = ~task_def, color = ~size, size = 0.1)
 
 
+ggplot(data2, aes(task_def, task_digg, color = size, group = ID)) + geom_point() + geom_line()
 
+
+ggplot(data2, aes(size, colour = as.factor(current_task)))+geom_density()
+
+ggplot(data2, aes(time, tas))
+
+
+
+ggplot(arrange(filter(data2, ID == c(595278)           ), t), aes(task_def, task_digg, color = size, group = ID))+geom_point()+geom_path()
+
+ggplot(arrange(data2, t), aes(task_def, task_digg, color = size, group = ID)) + geom_point() + geom_path()
+
+p1 <- ggplot(arrange(data2, t), aes(task_def, task_digg, color = size, group = ID)) + geom_point() + geom_path()
+
+ggsave("DoL_smallpop2.png", p1)
