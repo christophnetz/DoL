@@ -7,7 +7,7 @@ library(tidyverse)
 setwd("C:/Users/user/source/repos/DoL/DoL")
 
 
-data1 <- read.table("output1.txt", header = T)
+data1 <- read.table("outf1-5_1.txt", header = T)
 
 #population size dynamics
 ggplot(data1, aes(t, popsize))+ geom_line() 
@@ -31,7 +31,7 @@ ggplot(data1, aes(t, prop, colour = behaviour))+ geom_line()+
   
 
 #Individual-level data
-data2 <- read.table("output2small.txt", header = T)
+data2 <- read.table("aug1-2.txt", header = T)
 
 data2 <- filter(data2, !ID %in% data2$ID[which(data2$t==99001)] )
 
@@ -163,5 +163,5 @@ ggplot(arrange(filter(data2, ID == c(595278)           ), t), aes(task_def, task
 ggplot(arrange(data2, t), aes(task_def, task_digg, color = size, group = ID)) + geom_point() + geom_path()
 
 p1 <- ggplot(arrange(data2, t), aes(task_def, task_digg, color = size, group = ID)) + geom_point() + geom_path()
-
+p1
 ggsave("DoL_smallpop2.png", p1)
