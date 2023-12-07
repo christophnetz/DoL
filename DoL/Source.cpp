@@ -29,13 +29,12 @@ std::mt19937_64 rng;
 //std::vector<int> selected_functions = {0,1,2};
 
 
-Matrix<double, 1, 3> suitability(const double size, double suit_s) {
+Matrix<double, 1, 2> suitability(const double size) {
 
 
-  Matrix<double, 1, 3> suit = {
-    1.0 / (1.0 + exp((size - 15) / 4.0)),
-    3.0 / ((1.0 + exp((25 - size) / 4.0)) * (1.0 + exp((size - 25) / 4.0))),
-    0.8 / (1.0 + exp((suit_s - size) / 3.0))
+  Matrix<double, 1, 2> suit = {
+    1.0,
+    1.0
   };
 
   return suit;
@@ -54,72 +53,69 @@ double sd(Eigen::ArrayXd vec) {
 struct ind
 {
   ind() : size(1.0), ID(1), updates(0), itask(0) {
-    m_experience = { 0.0, 0.0, 0.0 };
-    m_task = { 0.33, 0.33, 0.33 };
+    m_experience = { 0.0, 0.0 };
+    m_task = { 0.00, 0.00 };
   };
 
 
   ind(int i) : size(1.0), updates(0), itask(0), ID(i) {
-    m_experience = { 0.0, 0.0, 0.0 };
-    m_task = { 0.33, 0.33, 0.33 };
+    m_experience = { 0.0, 0.0 };
+    m_task = { 0.00, 0.00 };
 
   };
 
   double size;
   int updates;
   int ID;
-  Matrix<double, 1, 3> m_experience;
-  Matrix<double, 1, 3> m_task;
+  Matrix<double, 1, 2> m_experience;
+  Matrix<double, 1, 2> m_task;
   int itask;
 
   void experience(double forget_rate, double learning_rate) {
 
     for (int i = 0; i < m_experience.size(); ++i) {
       if (i == itask) {
-        m_experience(0, itask) += (learning_rate * (1.0 - (1.0 * m_experience[itask])));
+        m_experience(0, i) += (learning_rate * (1.0 - (1.0 * m_experience[itask])));
 
       }
       else {
-        m_experience *= forget_rate;
+        m_experience(0, i) *= forget_rate;
       }
     }
-
-
   }
 
-  void task(Matrix<double, 1, 3> labour, Matrix<double, 1, 3> count, param_t params) {
 
+  void task(Matrix<double, 1, 2>& labour, Matrix<double, 1, 2> count, param_t params) {
+
+    labour[itask] -= m_task[itask];
 
     // mismatch between labour components;
     // sensitivity to mismatch
-    Eigen::Index   minIndex;
-    if (count.minCoeff(&minIndex) == -1) {
-      itask = minIndex;
-    }
-    else {
-      m_task = suitability(size, params.suit_s) + m_experience + params.phi * (suitability(size, params.suit_s).array() * m_experience.array()).matrix();
-
-      // one of two decision mechanics: 1) choose task of greatest deficit, or 2) choose task of greatest efficiency gain
 
 
-      Matrix<double, 1, 3> avgeffectdiff = (m_task.array() / m_task.sum() + params.f1 * (1.0 - labour.array() / labour.sum()) + params.f2 * (1.0 - labour.array() / labour.sum()) * m_task.array() / m_task.sum()).matrix();
+    m_task = suitability(size) + m_experience;
+
+    // one of two decision mechanics: 1) choose task of greatest deficit, or 2) choose task of greatest efficiency gain
 
 
-      Eigen::Index   maxIndex;
-      avgeffectdiff.colwise().sum().maxCoeff(&maxIndex);
-      itask = maxIndex;
+    Matrix<double, 1, 2> avgeffectdiff = ((1.0 - params.f1) * m_task.array() / m_task.sum() + params.f1 * (1.0 - labour.array() / labour.sum())).matrix();
 
-    }
+
+    Eigen::Index   maxIndex;
+    avgeffectdiff.colwise().sum().maxCoeff(&maxIndex);
+    itask = maxIndex;
+    labour[itask] += m_task[itask];
 
     updates++;
   }
 
-  void labour(Matrix<double, 1, 3>& labour, Matrix<double, 1, 3>& count, param_t params) {
 
-    m_task = suitability(size, params.suit_s) + m_experience + params.phi * (suitability(size, params.suit_s).array() * m_experience.array()).matrix();
+  void labour(Matrix<double, 1, 2>& labour, Matrix<double, 1, 2>& count, param_t params) {
+
+    m_task = suitability(size) + m_experience;
 
 
-    Matrix<double, 1, 3> mask = { 0.0, 0.0, 0.0 };
+    Matrix<double, 1, 2> mask = { 0.0, 0.0 };
     mask(0, itask) = 1.0;
 
     labour += (mask.array() * (m_task).array()).matrix();//
@@ -142,6 +138,7 @@ void deaths(vector<ind>& pop, double mortrate) {
   std::binomial_distribution<int> d_dist(pop.size(), mortrate);
   int deaths = d_dist(rng);
   if (pop.size() - deaths < 2) {  //setting a minimal population size
+
     deaths = pop.size() - 1;
   }
   if (deaths > 0) {
@@ -151,13 +148,15 @@ void deaths(vector<ind>& pop, double mortrate) {
   }
 }
 
-void births(vector<ind>& pop, int& ID, bool idactive, const Matrix<double, 1, 3> labour, const Matrix<double, 1, 3> count, param_t params) {
+void births(vector<ind>& pop, int& ID, bool idactive, Matrix<double, 1, 2>& labour, const Matrix<double, 1, 2> count, param_t params) {
 
   int offspring = std::poisson_distribution<int>(params.birthrate)(rng);
   double popsize = static_cast<double> (pop.size());
   for (int i = 0; i < offspring; ++i) {
     pop.push_back(ind(ID));
+
     pop.back().task(labour, count, params);
+
     if (idactive) {
       ID = (ID + 1);
     }
@@ -173,16 +172,24 @@ void run_sim(param_t params) {
 
   std::ofstream ofs1(str1, std::ofstream::out);
   std::ofstream ofs2(str2, std::ofstream::out);
-  ofs1 << "t\tpopsize" << "\t" << "avgbodysize" << "\t" << "sdneed\teggcare\tdigging\tdefense" << std::endl;
-  ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_egg\texp_digg\texp_def\ttask_egg\ttask_digg\ttask_def" << std::endl;
+  ofs1 << "t\tpopsize" << "\t" << "avgbodysize" << "\t" << "sdneed\tt1\tt2\t" << std::endl;
+  ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_t1\texp_t2\ttask_t1\ttask_t2" << std::endl;
 
-  Matrix<double, 1, 3> labour = { 3.0, 3.0, 3.0 };
-  Matrix<double, 1, 3> counts = { 10.0, 10.0, 10.0 };
+  Matrix<double, 1, 2> labour = { 3.0, 3.0 };
+  Matrix<double, 1, 2> counts = { 10.0, 10.0 };
 
   vector<ind> pop(30);
   int ID = 0;
   int ind_counter = 0;
-  rng.seed(934729); // 5555
+  if (params.seed == 0) {
+    static std::random_device rd{}; 
+    auto seed = rd();
+    rng.seed(seed); // seed the engine
+    cout << "Seed: "<< seed << endl;
+  }
+  else {
+    rng.seed(params.seed); // 5555
+  }
 
   for (int i = 0; i < pop.size(); ++i) {
     pop[i].size = static_cast<double>(i) + 1.0;
@@ -199,13 +206,13 @@ void run_sim(param_t params) {
       births(pop, ID, next_t > 5000, labour, counts, params);
       deaths(pop, params.mort);
 
-      labour = { 0.0, 0.0, 0.0 }; //reset labour vector
-      counts = { 0.0, 0.0, 0.0 }; //reset counts 
+      labour = { 0.0, 0.0 }; //reset labour vector
+      counts = { 0.0, 0.0 }; //reset counts 
 
       for (int i = 0; i < pop.size(); i++) {
-        pop[i].labour(labour, counts, params);
-        pop[i].experience(params.forget_rate, params.learning_rate);
         pop[i].size *= (1.0 + 0.2 * exp(-0.15 * pop[i].size));
+        pop[i].experience(params.forget_rate, params.learning_rate);
+        pop[i].labour(labour, counts, params);
       }
 
       // Output
@@ -213,11 +220,11 @@ void run_sim(param_t params) {
 
       if (next_t > 5000.0) { //90000
         for (int i = 0; i < pop.size(); ++i) {
-          if (ID > 0) {
+          if (pop[i].ID > 0) {
             ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
           }
         }
-        cout << next_t << endl;
+        //cout << next_t << "";
       }
       next_t++;
     }
@@ -233,7 +240,7 @@ void run_sim(param_t params) {
   }
 
   ofs1.close();
-  ofs2.close();
+  //ofs2.close();
 }
 
 int main(int argc, const char** argv) {
@@ -255,7 +262,8 @@ int main(int argc, const char** argv) {
     clp.optional("phi", param.phi);
     clp.optional("f1", param.f1);
     clp.optional("f2", param.f2);
-    clp.optional("suit_s", param.suit_s);
+    clp.optional("nrtasks", param.nrtasks);
+    clp.optional("seed", param.seed);
     clp.optional("outdir", param.outdir);
 
 

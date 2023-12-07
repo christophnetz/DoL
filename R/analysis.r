@@ -4,7 +4,7 @@ library(scales)
 library(readr)
 library(tidyverse)
 
-setwd("C:/Users/user/source/repos/DoL/DoL")
+setwd("C:/Users/user/source/repos/DoL/DoL/out2")
 
 
 data1 <- read.table("outf1-5_1.txt", header = T)
