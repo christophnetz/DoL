@@ -5,6 +5,8 @@
 #include <chrono>
 #include <numeric>
 #include <fstream>
+#include <iostream>
+
 #include <Eigen>
 
 #include "rndutils.hpp"
@@ -79,7 +81,7 @@ struct ind
 
       }
       else {
-        m_experience(0, i) *= forget_rate;
+        m_experience(0, i) *= (1.0 - forget_rate);
       }
     }
   }
@@ -167,13 +169,25 @@ void births(vector<ind>& pop, int& ID, bool idactive, Matrix<double, 1, 2>& labo
 
 void run_sim(param_t params) {
 
-  string str1 = params.outdir + "_1.txt";
-  string str2 = params.outdir + "_2.txt";
+  int _N = 0;
+  double a;
+  double b;
+  double avgsd = 0.0;
+  double avgperf = 0.0;
 
-  std::ofstream ofs1(str1, std::ofstream::out);
-  std::ofstream ofs2(str2, std::ofstream::out);
-  ofs1 << "t\tpopsize" << "\t" << "avgbodysize" << "\t" << "sdneed\tt1\tt2\t" << std::endl;
-  ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_t1\texp_t2\ttask_t1\ttask_t2" << std::endl;
+
+  string str = params.outdir + "_summary.txt";
+  //string str1 = params.outdir + "_1.txt";
+  //string str2 = params.outdir + "_2.txt";
+
+  std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
+
+  //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
+
+  //std::ofstream ofs1(str1, std::ofstream::out);
+  //std::ofstream ofs2(str2, std::ofstream::out);
+  //ofs1 << "t\tpopsize" << "\t" << "avgbodysize" << "\t" << "sdneed\tt1\tt2\t" << std::endl;
+  //ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_t1\texp_t2\ttask_t1\ttask_t2" << std::endl;
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
   Matrix<double, 1, 2> counts = { 10.0, 10.0 };
@@ -216,14 +230,24 @@ void run_sim(param_t params) {
       }
 
       // Output
-      ofs1 << next_t << "\t" << pop.size() << "\t" << avg_size(pop) << "\t" << sd(labour.array()) << "\t" << labour << std::endl;
+      //ofs1 << next_t << "\t" << pop.size() << "\t" << avg_size(pop) << "\t" << sd(labour.array()) << "\t" << labour << std::endl;
+
+
 
       if (next_t > 5000.0) { //90000
-        for (int i = 0; i < pop.size(); ++i) {
-          if (pop[i].ID > 0) {
-            ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
-          }
-        }
+
+        _N++;
+        a = 1.0 / static_cast<double>(_N);
+        b = 1.0 - a;
+        avgperf = a * labour.sum()/static_cast<double>(pop.size()) + b * avgperf;
+        avgsd = a * sd(labour.array()/ labour.sum()) + b * avgsd;
+
+
+        //for (int i = 0; i < pop.size(); ++i) {
+        //  if (pop[i].ID > 0) {
+        //    ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
+        //  }
+        //}
         //cout << next_t << "";
       }
       next_t++;
@@ -239,7 +263,10 @@ void run_sim(param_t params) {
 
   }
 
-  ofs1.close();
+  ofssum << _N << "\t" << avgperf << "\t" << avgsd << "\t" << params.f1 << "\t" << params.birthrate << "\t"
+    << params.learning_rate << "\t" << params.forget_rate<< endl;
+
+  ofssum.close();
   //ofs2.close();
 }
 
