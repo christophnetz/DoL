@@ -6,9 +6,7 @@
 #include <numeric>
 #include <fstream>
 #include <iostream>
-
 #include <Eigen>
-
 #include "rndutils.hpp"
 #include "parameters.h"
 #include "cmd_line.h"
@@ -17,39 +15,23 @@ using namespace std;
 using namespace Eigen;
 
 std::mt19937_64 rng;
-//int Tmax = 100000;
-//double lambda = 0.9; //forgetting, lim-> 10
-//double updaterate = 0.2;
-//double mort = 0.006; //0.006
-//double birthrate = 0.2; //0.2 //6, 0.2, 0.06
-//double phi = 0.0; // interaction term for suitability x experience
-////double f1 = 0.5;
-//double f2 = 0.0;
-//double suit_s = 25.0;
-//int selected = 3;
-
-//std::vector<int> selected_functions = {0,1,2};
 
 
-Matrix<double, 1, 2> suitability(const double size) {
 
+Matrix<double, 1, 2> baseline() {
 
-  Matrix<double, 1, 2> suit = {
+  Matrix<double, 1, 2> base = {
     1.0,
     1.0
   };
 
-  return suit;
+  return base;
 }
-
-
 
 
 double sd(Eigen::ArrayXd vec) {
   return std::sqrt((vec - vec.mean()).square().sum() / (vec.size()));
 }
-
-
 
 
 struct ind
@@ -79,7 +61,6 @@ struct ind
     for (int i = 0; i < m_experience.size(); ++i) {
       if (i == itask) {
         m_experience(0, i) += (learning_rate * (1.0 - (1.0 * m_experience[itask])));
-
       }
       else {
         m_experience(0, i) *= (1.0 - forget_rate);
@@ -92,14 +73,7 @@ struct ind
 
     labour[itask] -= m_task[itask];
 
-    // mismatch between labour components;
-    // sensitivity to mismatch
-
-
-    m_task = suitability(size) + m_experience;
-
-    // one of two decision mechanics: 1) choose task of greatest deficit, or 2) choose task of greatest efficiency gain
-
+    m_task = baseline() + m_experience;
 
     Matrix<double, 1, 2> avgeffectdiff = ((1.0 - params.f1) * m_task.array() / m_task.sum() + params.f1 * (1.0 - labour.array() / labour.sum())).matrix();
 
@@ -119,8 +93,7 @@ struct ind
 
   void labour(Matrix<double, 1, 2>& labour, Matrix<double, 1, 2>& count, param_t params) {
 
-    m_task = suitability(size) + m_experience;
-
+    m_task = baseline() + m_experience;
 
     Matrix<double, 1, 2> mask = { 0.0, 0.0 };
     mask(0, itask) = 1.0;
@@ -128,7 +101,6 @@ struct ind
     labour += (mask.array() * (m_task).array()).matrix();//
 
     count(0, itask) += 1.0;
-
   }
 };
 
@@ -148,6 +120,7 @@ void deaths(vector<ind>& pop, double mortrate, std::ofstream& ofs) {
 
     deaths = pop.size() - 1;
   }
+
   if (deaths > 0) {
 
     std::shuffle(std::begin(pop), std::end(pop), rng);
@@ -187,18 +160,12 @@ void run_sim(param_t params) {
 
   string str = params.outdir + "_summary.txt";
   string str2 = params.outdir + "_changes.txt";
-  //string str1 = params.outdir + "_1.txt";
-  //string str2 = params.outdir + "_2.txt";
 
   std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
   std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);  //new55
   ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; //new55
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
 
-  //std::ofstream ofs1(str1, std::ofstream::out);
-  //std::ofstream ofs2(str2, std::ofstream::out);
-  //ofs1 << "t\tpopsize" << "\t" << "avgbodysize" << "\t" << "sdneed\tt1\tt2\t" << std::endl;
-  //ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_t1\texp_t2\ttask_t1\ttask_t2" << std::endl;
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
   Matrix<double, 1, 2> counts = { 10.0, 10.0 };
@@ -213,7 +180,7 @@ void run_sim(param_t params) {
     cout << "Seed: "<< seed << endl;
   }
   else {
-    rng.seed(params.seed); // 5555
+    rng.seed(params.seed); 
   }
 
   for (int i = 0; i < pop.size(); ++i) {
@@ -240,12 +207,8 @@ void run_sim(param_t params) {
         pop[i].labour(labour, counts, params);
       }
 
-      // Output
-      //ofs1 << next_t << "\t" << pop.size() << "\t" << avg_size(pop) << "\t" << sd(labour.array()) << "\t" << labour << std::endl;
 
-
-
-      if (next_t > 5000.0) { //90000
+      if (next_t > 5000.0) { 
 
         _N++;
         a = 1.0 / static_cast<double>(_N);
@@ -283,9 +246,6 @@ void run_sim(param_t params) {
 }
 
 int main(int argc, const char** argv) {
-
-
-
 
   try {
     auto param = param_t{};
