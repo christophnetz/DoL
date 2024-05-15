@@ -54,7 +54,7 @@ struct ind
   Matrix<double, 1, 2> m_experience;
   Matrix<double, 1, 2> m_task;
   int itask;
-  int task_changes; //new55
+  int task_changes; 
 
   void experience(double forget_rate, double learning_rate) {
 
@@ -80,9 +80,9 @@ struct ind
 
     Eigen::Index   maxIndex;
     avgeffectdiff.colwise().sum().maxCoeff(&maxIndex);
-    if (itask != maxIndex) { //new55
-      itask = maxIndex; //new55
-      task_changes++; //new55
+    if (itask != maxIndex) { 
+      itask = maxIndex; 
+      task_changes++; 
     }
     itask = maxIndex;
     labour[itask] += m_task[itask];
@@ -98,7 +98,7 @@ struct ind
     Matrix<double, 1, 2> mask = { 0.0, 0.0 };
     mask(0, itask) = 1.0;
 
-    labour += (mask.array() * (m_task).array()).matrix();//
+    labour += (mask.array() * (m_task).array()).matrix();
 
     count(0, itask) += 1.0;
   }
@@ -125,10 +125,10 @@ void deaths(vector<ind>& pop, double mortrate, std::ofstream& ofs) {
 
     std::shuffle(std::begin(pop), std::end(pop), rng);
 
-    for (int i = 0; i < deaths; i++) {  //new55
+    for (int i = 0; i < deaths; i++) {  
       ofs << pop.back().task_changes <<" ";
       pop.pop_back();
-    } //new55
+    } 
   }
 }
 
@@ -162,8 +162,8 @@ void run_sim(param_t params) {
   string str2 = params.outdir + "_changes.txt";
 
   std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
-  std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);  //new55
-  ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; //new55
+  std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app); 
+  ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
 
 
