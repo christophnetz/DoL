@@ -36,19 +36,18 @@ double sd(Eigen::ArrayXd vec) {
 
 struct ind
 {
-  ind() : size(1.0), ID(1), updates(0), itask(0), task_changes(0) {
+  ind() : ID(1), updates(0), itask(0), task_changes(0) {
     m_experience = { 0.0, 0.0 };
     m_task = { 0.00, 0.00 };
   };
 
 
-  ind(int i) : size(1.0), updates(0), itask(0), task_changes(0), ID(i) {
+  ind(int i) : updates(0), itask(0), task_changes(0), ID(i) {
     m_experience = { 0.0, 0.0 };
     m_task = { 0.00, 0.00 };
 
   };
 
-  double size;
   int updates;
   int ID;
   Matrix<double, 1, 2> m_experience;
@@ -104,14 +103,6 @@ struct ind
   }
 };
 
-double avg_size(std::vector<ind> v) {
-  double totalsize = 0;
-  for (int i = 0; i < v.size(); i++) {
-    totalsize += v[i].size;
-  }
-  return totalsize / static_cast<double>(v.size());
-}
-
 void deaths(vector<ind>& pop, double mortrate, std::ofstream& ofs) {
 
   std::binomial_distribution<int> d_dist(pop.size(), mortrate);
@@ -160,11 +151,16 @@ void run_sim(param_t params) {
 
   string str = params.outdir + "_summary.txt";
   string str2 = params.outdir + "_changes.txt";
+  string str3 = params.outdir + "_ind.txt";
+
 
   std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
   std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app); 
+  std::ofstream ofs2(str3, std::ofstream::out);
+
   ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
+  ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_egg\texp_digg\texp_def\ttask_egg\ttask_digg\ttask_def" << std::endl;
 
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
@@ -183,10 +179,6 @@ void run_sim(param_t params) {
     rng.seed(params.seed); 
   }
 
-  for (int i = 0; i < pop.size(); ++i) {
-    pop[i].size = static_cast<double>(i) + 1.0;
-  }
-
   int next_t = 1;
   // discrete times, but don't update simultaneously, instead draw individuals at random one after the other
   for (double t = 0.0; ID < params.Tmax; ) {
@@ -202,7 +194,6 @@ void run_sim(param_t params) {
       counts = { 0.0, 0.0 }; //reset counts 
 
       for (int i = 0; i < pop.size(); i++) {
-        pop[i].size *= (1.0 + 0.2 * exp(-0.15 * pop[i].size));
         pop[i].experience(params.forget_rate, params.learning_rate);
         pop[i].labour(labour, counts, params);
       }
@@ -217,11 +208,11 @@ void run_sim(param_t params) {
         avgsd = a * sd(labour.array()/ labour.sum()) + b * avgsd;
 
 
-        //for (int i = 0; i < pop.size(); ++i) {
-        //  if (pop[i].ID > 0) {
-        //    ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
-        //  }
-        //}
+        for (int i = 0; i < pop.size(); ++i) {
+          if (pop[i].ID > 0) {
+            ofs2 << next_t << "\t" << pop[i].ID << "\t" << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
+          }
+        }
         //cout << next_t << "";
       }
       next_t++;
@@ -241,6 +232,7 @@ void run_sim(param_t params) {
     << params.learning_rate << "\t" << params.forget_rate<< endl;
 
   ofssum.close();
+  ofs2.close();
   ofs_changes << std::endl;
   ofs_changes.close();
 }
@@ -261,7 +253,6 @@ int main(int argc, const char** argv) {
     clp.optional("phi", param.phi);
     clp.optional("f1", param.f1);
     clp.optional("f2", param.f2);
-    clp.optional("nrtasks", param.nrtasks);
     clp.optional("seed", param.seed);
     clp.optional("outdir", param.outdir);
 

@@ -16,7 +16,6 @@ struct param_t
   double phi = 0.0; // interaction term for suitability x experience
   double f1 = 0.5;
   double f2 = 0.0;
-  int nrtasks = 2;
   int seed = 1;
   std::string outdir;
 
