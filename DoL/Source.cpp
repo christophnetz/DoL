@@ -54,13 +54,13 @@ double sd(Eigen::ArrayXd vec) {
 
 struct ind
 {
-  ind() : size(1.0), ID(1), updates(0), itask(0) {
+  ind() : size(1.0), ID(1), updates(0), itask(0), task_changes(0) {
     m_experience = { 0.0, 0.0 };
     m_task = { 0.00, 0.00 };
   };
 
 
-  ind(int i) : size(1.0), updates(0), itask(0), ID(i) {
+  ind(int i) : size(1.0), updates(0), itask(0), task_changes(0), ID(i) {
     m_experience = { 0.0, 0.0 };
     m_task = { 0.00, 0.00 };
 
@@ -72,6 +72,7 @@ struct ind
   Matrix<double, 1, 2> m_experience;
   Matrix<double, 1, 2> m_task;
   int itask;
+  int task_changes; //new55
 
   void experience(double forget_rate, double learning_rate) {
 
@@ -105,6 +106,10 @@ struct ind
 
     Eigen::Index   maxIndex;
     avgeffectdiff.colwise().sum().maxCoeff(&maxIndex);
+    if (itask != maxIndex) { //new55
+      itask = maxIndex; //new55
+      task_changes++; //new55
+    }
     itask = maxIndex;
     labour[itask] += m_task[itask];
 
@@ -135,7 +140,7 @@ double avg_size(std::vector<ind> v) {
   return totalsize / static_cast<double>(v.size());
 }
 
-void deaths(vector<ind>& pop, double mortrate) {
+void deaths(vector<ind>& pop, double mortrate, std::ofstream& ofs) {
 
   std::binomial_distribution<int> d_dist(pop.size(), mortrate);
   int deaths = d_dist(rng);
@@ -146,7 +151,11 @@ void deaths(vector<ind>& pop, double mortrate) {
   if (deaths > 0) {
 
     std::shuffle(std::begin(pop), std::end(pop), rng);
-    pop.resize(pop.size() - deaths);
+
+    for (int i = 0; i < deaths; i++) {  //new55
+      ofs << pop.back().task_changes <<" ";
+      pop.pop_back();
+    } //new55
   }
 }
 
@@ -177,11 +186,13 @@ void run_sim(param_t params) {
 
 
   string str = params.outdir + "_summary.txt";
+  string str2 = params.outdir + "_changes.txt";
   //string str1 = params.outdir + "_1.txt";
   //string str2 = params.outdir + "_2.txt";
 
   std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
-
+  std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);  //new55
+  ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; //new55
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
 
   //std::ofstream ofs1(str1, std::ofstream::out);
@@ -218,7 +229,7 @@ void run_sim(param_t params) {
     while (delta_t + t > next_t) {
 
       births(pop, ID, next_t > 5000, labour, counts, params);
-      deaths(pop, params.mort);
+      deaths(pop, params.mort, ofs_changes);
 
       labour = { 0.0, 0.0 }; //reset labour vector
       counts = { 0.0, 0.0 }; //reset counts 
@@ -267,7 +278,8 @@ void run_sim(param_t params) {
     << params.learning_rate << "\t" << params.forget_rate<< endl;
 
   ofssum.close();
-  //ofs2.close();
+  ofs_changes << std::endl;
+  ofs_changes.close();
 }
 
 int main(int argc, const char** argv) {
