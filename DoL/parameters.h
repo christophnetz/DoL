@@ -13,10 +13,7 @@ struct param_t
   double updaterate = 0.2;
   double mort = 0.006; //0.006
   double birthrate = 0.08; //0.2 //6, 0.2, 0.06
-  double phi = 0.0; // interaction term for suitability x experience
   double f1 = 0.5;
-  double f2 = 0.0;
-  int nrtasks = 2;
   int seed = 1;
   std::string outdir;
 

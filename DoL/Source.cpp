@@ -159,12 +159,15 @@ void run_sim(param_t params) {
 
 
   string str = params.outdir + "_summary.txt";
+  string str1 = params.outdir + "_ind.txt";
   string str2 = params.outdir + "_changes.txt";
 
   std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
-  std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app); 
+  std::ofstream ofs2(str1, std::ofstream::out | std::ofstream::app);
+  std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);
   ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
+  ofs2 << "f1\tt\tID\tsize\tcurrent_task\tupdates\texp_egg\texp_digg\texp_def" << std::endl;
 
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
@@ -217,12 +220,12 @@ void run_sim(param_t params) {
         avgsd = a * sd(labour.array()/ labour.sum()) + b * avgsd;
 
 
-        //for (int i = 0; i < pop.size(); ++i) {
-        //  if (pop[i].ID > 0) {
-        //    ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
-        //  }
-        //}
-        //cout << next_t << "";
+        for (int i = 0; i < pop.size(); ++i) {
+          if (pop[i].ID > 0) {
+            ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
+          }
+        }
+        cout << next_t << "";
       }
       next_t++;
     }
@@ -243,6 +246,7 @@ void run_sim(param_t params) {
   ofssum.close();
   ofs_changes << std::endl;
   ofs_changes.close();
+  ofs2.close();
 }
 
 int main(int argc, const char** argv) {
@@ -258,10 +262,7 @@ int main(int argc, const char** argv) {
     clp.optional("updaterate", param.updaterate);
     clp.optional("mort", param.mort);
     clp.optional("birthrate", param.birthrate);
-    clp.optional("phi", param.phi);
     clp.optional("f1", param.f1);
-    clp.optional("f2", param.f2);
-    clp.optional("nrtasks", param.nrtasks);
     clp.optional("seed", param.seed);
     clp.optional("outdir", param.outdir);
 
