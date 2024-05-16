@@ -167,7 +167,7 @@ void run_sim(param_t params) {
   std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);
   ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
-  ofs2 << "f1\tt\tID\tsize\tcurrent_task\tupdates\texp_egg\texp_digg\texp_def" << std::endl;
+  ofs2 << "f1\tt\tID\tcurrent_task\texp_egg\texp_digg\texp_def\tnr_changes" << std::endl;
 
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
@@ -222,10 +222,9 @@ void run_sim(param_t params) {
 
         for (int i = 0; i < pop.size(); ++i) {
           if (pop[i].ID > 0) {
-            ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
+            ofs2 << params.f1 << "\t" << next_t << "\t" << pop[i].ID << "\t" << pop[i].itask << "\t" << pop[i].m_experience << "\t" << pop[i].task_changes << std::endl;
           }
         }
-        cout << next_t << "";
       }
       next_t++;
     }
