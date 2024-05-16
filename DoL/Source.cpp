@@ -160,7 +160,7 @@ void run_sim(param_t params) {
 
   ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
-  ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_egg\texp_digg\texp_def\ttask_egg\ttask_digg\ttask_def" << std::endl;
+  ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_egg\texp_digg\texp_def\tchanges" << std::endl;
 
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
@@ -210,7 +210,7 @@ void run_sim(param_t params) {
 
         for (int i = 0; i < pop.size(); ++i) {
           if (pop[i].ID > 0) {
-            ofs2 << next_t << "\t" << pop[i].ID << "\t" << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
+            ofs2 << params.f1 << next_t << "\t" << pop[i].ID << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].task_changes << std::endl;
           }
         }
         //cout << next_t << "";
@@ -250,9 +250,7 @@ int main(int argc, const char** argv) {
     clp.optional("updaterate", param.updaterate);
     clp.optional("mort", param.mort);
     clp.optional("birthrate", param.birthrate);
-    clp.optional("phi", param.phi);
     clp.optional("f1", param.f1);
-    clp.optional("f2", param.f2);
     clp.optional("seed", param.seed);
     clp.optional("outdir", param.outdir);
 
