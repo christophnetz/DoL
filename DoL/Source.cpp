@@ -194,14 +194,6 @@ void run_sim(param_t params) {
         b = 1.0 - a;
         avgperf = a * labour.sum()/static_cast<double>(pop.size()) + b * avgperf;
         avgsd = a * sd(labour.array()/ labour.sum()) + b * avgsd;
-
-
-        //for (int i = 0; i < pop.size(); ++i) {
-        //  if (pop[i].ID > 0) {
-        //    ofs2 << next_t << "\t" << pop[i].ID << "\t" << pop[i].size << "\t" << pop[i].itask << "\t" << pop[i].updates << "\t" << pop[i].m_experience << "\t" << pop[i].m_task << std::endl;
-        //  }
-        //}
-        //cout << next_t << "";
       }
       next_t++;
     }
@@ -235,10 +227,7 @@ int main(int argc, const char** argv) {
     clp.optional("updaterate", param.updaterate);
     clp.optional("mort", param.mort);
     clp.optional("birthrate", param.birthrate);
-    clp.optional("phi", param.phi);
     clp.optional("f1", param.f1);
-    clp.optional("f2", param.f2);
-    clp.optional("nrtasks", param.nrtasks);
     clp.optional("seed", param.seed);
     clp.optional("outdir", param.outdir);
 
