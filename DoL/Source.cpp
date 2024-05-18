@@ -68,7 +68,7 @@ struct ind
   }
 
 
-  void task(Matrix<double, 1, 2>& labour, Matrix<double, 1, 2> count, param_t params) {
+  void task(Matrix<double, 1, 2>& labour, Matrix<double, 1, 2> count, param_t params, std::bernoulli_distribution& rbern) {
 
     labour[itask] -= m_task[itask];
 
@@ -76,10 +76,17 @@ struct ind
 
     Matrix<double, 1, 2> avgeffectdiff = ((1.0 - params.f1) * m_task.array() / m_task.sum() + params.f1 * (1.0 - labour.array() / labour.sum())).matrix();
 
+    double imax = 0;
+    for (int i = 1; i < avgeffectdiff.size(); i++) {
+      if (avgeffectdiff[i] > avgeffectdiff[imax]) {
+        imax = i;
+      }
+      else if (avgeffectdiff[i] == avgeffectdiff[imax] && rbern(rng)) {
+        imax = i;
+      }
+    }
 
-    Eigen::Index   maxIndex;
-    avgeffectdiff.colwise().sum().maxCoeff(&maxIndex);
-    itask = maxIndex;
+    itask = imax;
     labour[itask] += m_task[itask];
 
     updates++;
@@ -117,14 +124,14 @@ void deaths(vector<ind>& pop, double mortrate) {
   }
 }
 
-void births(vector<ind>& pop, int& ID, bool idactive, Matrix<double, 1, 2>& labour, const Matrix<double, 1, 2> count, param_t params) {
+void births(vector<ind>& pop, int& ID, bool idactive, Matrix<double, 1, 2>& labour, const Matrix<double, 1, 2> count, param_t params, std::bernoulli_distribution& rbern) {
 
   int offspring = std::poisson_distribution<int>(params.birthrate)(rng);
   double popsize = static_cast<double> (pop.size());
   for (int i = 0; i < offspring; ++i) {
     pop.push_back(ind(ID));
 
-    pop.back().task(labour, count, params);
+    pop.back().task(labour, count, params, rbern);
 
     if (idactive) {
       ID = (ID + 1);
@@ -153,6 +160,7 @@ void run_sim(param_t params) {
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
   Matrix<double, 1, 2> counts = { 10.0, 10.0 };
 
+
   vector<ind> pop(30);
   int ID = 0;
   int ind_counter = 0;
@@ -166,6 +174,7 @@ void run_sim(param_t params) {
     rng.seed(params.seed); 
   }
 
+  std::bernoulli_distribution rbern(0.5);
 
   int next_t = 1;
   // discrete times, but don't update simultaneously, instead draw individuals at random one after the other
@@ -175,7 +184,7 @@ void run_sim(param_t params) {
 
     while (delta_t + t > next_t) {
 
-      births(pop, ID, next_t > 5000, labour, counts, params);
+      births(pop, ID, next_t > 5000, labour, counts, params, rbern);
       deaths(pop, params.mort);
 
       labour = { 0.0, 0.0 }; //reset labour vector
@@ -202,7 +211,7 @@ void run_sim(param_t params) {
 
     int sel_i = std::uniform_int_distribution<int>(0, pop.size() - 1) (rng);
 
-    pop[sel_i].task(labour, counts, params);
+    pop[sel_i].task(labour, counts, params, rbern);
 
     t += delta_t;
 
