@@ -53,7 +53,7 @@ struct ind
   Matrix<double, 1, 2> m_experience;
   Matrix<double, 1, 2> m_task;
   int itask;
-  int task_changes; 
+  int task_changes;
 
   void experience(double forget_rate, double learning_rate) {
 
@@ -68,7 +68,7 @@ struct ind
   }
 
 
-  void task(Matrix<double, 1, 2>& labour, Matrix<double, 1, 2> count, param_t params) {
+  void task(Matrix<double, 1, 2>& labour, Matrix<double, 1, 2> count, param_t params, std::bernoulli_distribution& rbern) {
 
     labour[itask] -= m_task[itask];
 
@@ -76,15 +76,21 @@ struct ind
 
     Matrix<double, 1, 2> avgeffectdiff = ((1.0 - params.f1) * m_task.array() / m_task.sum() + params.f1 * (1.0 - labour.array() / labour.sum())).matrix();
 
-
-    Eigen::Index   maxIndex;
-    avgeffectdiff.colwise().sum().maxCoeff(&maxIndex);
-    if (itask != maxIndex) { 
-      itask = maxIndex; 
-      task_changes++; 
+    double imax = 0;
+    for (int i = 1; i < avgeffectdiff.size(); i++) {
+      if (avgeffectdiff[i] > avgeffectdiff[imax]) {
+        imax = i;
+      }
+      else if (avgeffectdiff[i] == avgeffectdiff[imax] && rbern(rng)) {
+        imax = i;
+      }
     }
-    itask = maxIndex;
-    labour[itask] += m_task[itask];
+
+    if (itask != imax) {
+      itask = imax;
+      task_changes++; // this results in a task change in 1 - 1/K cases during the initial task choice
+      //                 which has to be corrected during data analysis
+    }
 
     updates++;
   }
@@ -116,21 +122,21 @@ void deaths(vector<ind>& pop, double mortrate, std::ofstream& ofs) {
 
     std::shuffle(std::begin(pop), std::end(pop), rng);
 
-    for (int i = 0; i < deaths; i++) {  
-      ofs << pop.back().task_changes <<" ";
+    for (int i = 0; i < deaths; i++) {
+      ofs << pop.back().task_changes << " ";
       pop.pop_back();
-    } 
+    }
   }
 }
 
-void births(vector<ind>& pop, int& ID, bool idactive, Matrix<double, 1, 2>& labour, const Matrix<double, 1, 2> count, param_t params) {
+void births(vector<ind>& pop, int& ID, bool idactive, Matrix<double, 1, 2>& labour, const Matrix<double, 1, 2> count, param_t params, std::bernoulli_distribution& rbern) {
 
   int offspring = std::poisson_distribution<int>(params.birthrate)(rng);
   double popsize = static_cast<double> (pop.size());
   for (int i = 0; i < offspring; ++i) {
     pop.push_back(ind(ID));
 
-    pop.back().task(labour, count, params);
+    pop.back().task(labour, count, params, rbern);
 
     if (idactive) {
       ID = (ID + 1);
@@ -155,10 +161,10 @@ void run_sim(param_t params) {
 
 
   std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
-  std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app); 
+  std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);
   std::ofstream ofs2(str3, std::ofstream::out);
 
-  ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
+  ofs_changes << "f1 " << params.f1 << "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate << " ";
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
   ofs2 << "t\tID\tsize\tcurrent_task\tupdates\texp_egg\texp_digg\texp_def\tchanges" << std::endl;
 
@@ -170,14 +176,17 @@ void run_sim(param_t params) {
   int ID = 0;
   int ind_counter = 0;
   if (params.seed == 0) {
-    static std::random_device rd{}; 
+    static std::random_device rd{};
     auto seed = rd();
     rng.seed(seed); // seed the engine
-    cout << "Seed: "<< seed << endl;
+    cout << "Seed: " << seed << endl;
   }
   else {
-    rng.seed(params.seed); 
+    rng.seed(params.seed);
   }
+
+  std::bernoulli_distribution rbern(0.5);
+
 
   int next_t = 1;
   // discrete times, but don't update simultaneously, instead draw individuals at random one after the other
@@ -187,7 +196,7 @@ void run_sim(param_t params) {
 
     while (delta_t + t > next_t) {
 
-      births(pop, ID, next_t > 5000, labour, counts, params);
+      births(pop, ID, next_t > 5000, labour, counts, params, rbern);
       deaths(pop, params.mort, ofs_changes);
 
       labour = { 0.0, 0.0 }; //reset labour vector
@@ -199,13 +208,13 @@ void run_sim(param_t params) {
       }
 
 
-      if (next_t > 5000.0) { 
+      if (next_t > 5000.0) {
 
         _N++;
         a = 1.0 / static_cast<double>(_N);
         b = 1.0 - a;
-        avgperf = a * labour.sum()/static_cast<double>(pop.size()) + b * avgperf;
-        avgsd = a * sd(labour.array()/ labour.sum()) + b * avgsd;
+        avgperf = a * labour.sum() / static_cast<double>(pop.size()) + b * avgperf;
+        avgsd = a * sd(labour.array() / labour.sum()) + b * avgsd;
 
 
         for (int i = 0; i < pop.size(); ++i) {
@@ -222,14 +231,14 @@ void run_sim(param_t params) {
 
     int sel_i = std::uniform_int_distribution<int>(0, pop.size() - 1) (rng);
 
-    pop[sel_i].task(labour, counts, params);
+    pop[sel_i].task(labour, counts, params, rbern);
 
     t += delta_t;
 
   }
 
   ofssum << _N << "\t" << avgperf << "\t" << avgsd << "\t" << params.f1 << "\t" << params.birthrate << "\t"
-    << params.learning_rate << "\t" << params.forget_rate<< endl;
+    << params.learning_rate << "\t" << params.forget_rate << endl;
 
   ofssum.close();
   ofs2.close();
