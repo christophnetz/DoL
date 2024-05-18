@@ -161,7 +161,7 @@ void run_sim(param_t params) {
   Matrix<double, 1, 2> counts = { 10.0, 10.0 };
 
 
-  vector<ind> pop(30);
+  vector<ind> pop(round(params.birthrate / params.mort));
   int ID = 0;
   int ind_counter = 0;
   if (params.seed == 0) {
