@@ -167,7 +167,7 @@ void run_sim(param_t params) {
   std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);
   ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
   //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
-  ofs2 << "f1\tt\tID\tcurrent_task\texp_egg\texp_digg\texp_def\tnr_changes" << std::endl;
+  //ofs2 << "f1\tt\tID\tcurrent_task\texp_egg\texp_digg\texp_def\tnr_changes" << std::endl;
 
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
@@ -204,21 +204,7 @@ void run_sim(param_t params) {
       labour = { 0.0, 0.0 }; //reset labour vector
       counts = { 0.0, 0.0 }; //reset counts 
 
-      for (int i = 0; i < pop.size(); i++) {
-        pop[i].size *= (1.0 + 0.2 * exp(-0.15 * pop[i].size));
-        pop[i].experience(params.forget_rate, params.learning_rate);
-        pop[i].labour(labour, counts, params);
-      }
-
-
-      if (next_t > 5000.0) { 
-
-        _N++;
-        a = 1.0 / static_cast<double>(_N);
-        b = 1.0 - a;
-        avgperf = a * labour.sum()/static_cast<double>(pop.size()) + b * avgperf;
-        avgsd = a * sd(labour.array()/ labour.sum()) + b * avgsd;
-
+      if (next_t > 5000.0) {
 
         for (int i = 0; i < pop.size(); ++i) {
           if (pop[i].ID > 0) {
@@ -226,6 +212,23 @@ void run_sim(param_t params) {
           }
         }
       }
+
+      for (int i = 0; i < pop.size(); i++) {
+        pop[i].size *= (1.0 + 0.2 * exp(-0.15 * pop[i].size));
+        pop[i].experience(params.forget_rate, params.learning_rate);
+        pop[i].labour(labour, counts, params);
+      }
+
+
+      if (next_t > 5000.0) {
+
+        _N++;
+        a = 1.0 / static_cast<double>(_N);
+        b = 1.0 - a;
+        avgperf = a * labour.sum() / static_cast<double>(pop.size()) + b * avgperf;
+        avgsd = a * sd(labour.array() / labour.sum()) + b * avgsd;
+      }
+
       next_t++;
     }
 
