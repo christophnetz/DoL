@@ -93,6 +93,7 @@ struct ind
       //                 which has to be corrected during data analysis
     }
 
+    labour[itask] += m_task[itask];
     updates++;
   }
 
