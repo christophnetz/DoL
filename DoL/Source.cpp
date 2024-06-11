@@ -173,8 +173,7 @@ void run_sim(param_t params) {
   std::ofstream ofs2(str1, std::ofstream::out | std::ofstream::app);
   std::ofstream ofs_changes(str2, std::ofstream::out | std::ofstream::app);
   ofs_changes << "f1 "<< params.f1<< "\tbirthrate\t" << params.birthrate << "\learning\t" << params.learning_rate  << " "; 
-  //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
-  //ofs2 << "f1\tt\tID\tcurrent_task\texp_egg\texp_digg\texp_def\tnr_changes" << std::endl;
+ 
 
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
