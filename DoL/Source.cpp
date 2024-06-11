@@ -154,7 +154,6 @@ void run_sim(param_t params) {
   string str2 = params.outdir + "_changes.txt";
 
   std::ofstream ofssum(str, std::ofstream::out | std::ofstream::app);
-  //ofssum << "samples\tavgperf\tavgsd\tf1\tbirthrate\tlearn\tforget\t" << std::endl;
 
 
   Matrix<double, 1, 2> labour = { 3.0, 3.0 };
